@@ -228,11 +228,16 @@ tbody tr:hover{background:var(--paper);}
 .medal.silver{background:#9CA3AF;}
 .medal.bronze{background:#B45309;}
 
+/* ---- Hide the shell until the admin check passes, so a JS error
+       or slow network never leaves protected data visible. ---- */
+.app-shell{opacity:0;pointer-events:none;transition:opacity .18s ease;}
+.app-shell.ready{opacity:1;pointer-events:auto;}
+
 </style>
 </head>
 <body data-page="leaderboard">
 
-<div class="app-shell">
+<div class="app-shell" id="app-shell">
 
   <aside class="sidebar" id="sidebar">
     <div class="brand">
@@ -313,6 +318,12 @@ tbody tr:hover{background:var(--paper);}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
+(function () {
+"use strict";
+
+if (window.__apecs_leaderboard_loaded) return; // guard: never re-run this page's script twice
+window.__apecs_leaderboard_loaded = true;
+
 /* ===== APECS Admin — Leaderboard page logic (self-contained) =====
    Supabase project + anon key are declared directly in this file
    so this page works completely on its own. */
@@ -374,6 +385,7 @@ async function requireAdmin() {
   document.getElementById("status-dot")?.classList.remove("off");
   const statusText = document.getElementById("status-text");
   if (statusText) statusText.textContent = "Connected";
+  document.getElementById("app-shell")?.classList.add("ready");
 
   return session;
 }
@@ -458,6 +470,9 @@ document.getElementById("search-input").addEventListener("input", (e) => {
   }
 })();
 
+})();
+
 </script>
 </body>
 </html>
+
