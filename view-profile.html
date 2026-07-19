@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Profile — Admin APECS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== APECS Admin — shared design tokens & shell =====
+   This block is intentionally duplicated in every page's CSS file
+   so each page remains fully self-contained and independently editable. */
+
+:root{
+  --ink:#10132A;
+  --ink-soft:#1B1F3B;
+  --line:#E5E7F0;
+  --line-soft:#EEF0F7;
+  --paper:#F5F6FA;
+  --card:#FFFFFF;
+  --text:#1C1F33;
+  --text-dim:#6B7089;
+  --text-faint:#9296AC;
+  --accent:#4F46E5;
+  --accent-soft:#EEEDFD;
+  --accent-ink:#3730A3;
+  --good:#16A34A;
+  --good-soft:#E9F9EF;
+  --warn:#D97706;
+  --warn-soft:#FEF3E2;
+  --bad:#DC2626;
+  --bad-soft:#FDEDED;
+  --sidebar-w:230px;
+  --radius:10px;
+  --radius-lg:14px;
+  --shadow:0 1px 2px rgba(16,19,42,0.04), 0 8px 24px -12px rgba(16,19,42,0.12);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+.mono{font-family:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+ul{list-style:none;}
+
+/* ---- App shell ---- */
+.app-shell{display:flex;min-height:100vh;}
+
+.sidebar{
+  width:var(--sidebar-w);
+  flex-shrink:0;
+  background:var(--ink);
+  color:#C7C9E8;
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  top:0;left:0;bottom:0;
+  z-index:40;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:22px 20px 18px;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.brand-mark{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent),#8B7BFF);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;
+  font-weight:700;font-size:13px;color:#fff;
+  flex-shrink:0;
+}
+.brand-text{line-height:1.15;}
+.brand-text .t1{font-weight:700;font-size:14.5px;color:#fff;letter-spacing:.2px;}
+.brand-text .t2{font-size:11px;color:#8489B5;font-family:'JetBrains Mono',monospace;letter-spacing:.4px;}
+
+.status-pill{
+  margin:14px 20px 0;
+  display:flex;align-items:center;gap:7px;
+  font-size:11px;color:#8489B5;
+  font-family:'JetBrains Mono',monospace;
+}
+.status-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--good);
+  box-shadow:0 0 0 3px rgba(22,163,74,0.2);
+}
+.status-dot.off{background:var(--bad);box-shadow:0 0 0 3px rgba(220,38,38,0.2);}
+
+.nav{padding:18px 12px;flex:1;display:flex;flex-direction:column;gap:2px;}
+.nav a{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 12px;border-radius:8px;
+  font-size:13.5px;font-weight:500;color:#AEB2D6;
+  transition:background .15s ease,color .15s ease;
+}
+.nav a svg{width:17px;height:17px;flex-shrink:0;opacity:.85;}
+.nav a:hover{background:rgba(255,255,255,0.06);color:#fff;}
+.nav a.active{background:var(--accent);color:#fff;}
+.nav a.active svg{opacity:1;}
+
+.sidebar-foot{padding:14px 12px 18px;border-top:1px solid rgba(255,255,255,0.08);}
+.logout-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);
+  background:transparent;color:#C7C9E8;font-size:13px;font-weight:600;
+  transition:all .15s ease;
+}
+.logout-btn:hover{background:rgba(220,38,38,0.15);border-color:rgba(220,38,38,0.4);color:#FCA5A5;}
+
+.main{
+  margin-left:var(--sidebar-w);
+  flex:1;
+  min-width:0;
+  padding:28px 34px 60px;
+}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:26px;flex-wrap:wrap;gap:14px;
+}
+.topbar h1{font-size:21px;font-weight:700;letter-spacing:-.2px;}
+.topbar .sub{font-size:13px;color:var(--text-dim);margin-top:3px;}
+
+/* ---- Cards / tables ---- */
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+}
+.card-pad{padding:20px 22px;}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 22px;border-bottom:1px solid var(--line-soft);
+  flex-wrap:wrap;gap:10px;
+}
+.card-head h2{font-size:15px;font-weight:700;}
+.card-head .count{font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{
+  text-align:left;padding:12px 22px;font-size:11px;font-weight:700;
+  color:var(--text-faint);text-transform:uppercase;letter-spacing:.5px;
+  border-bottom:1px solid var(--line);white-space:nowrap;
+}
+tbody td{padding:13px 22px;border-bottom:1px solid var(--line-soft);white-space:nowrap;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--paper);}
+
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;
+}
+.badge.good{background:var(--good-soft);color:var(--good);}
+.badge.bad{background:var(--bad-soft);color:var(--bad);}
+.badge.warn{background:var(--warn-soft);color:var(--warn);}
+.badge.neutral{background:var(--accent-soft);color:var(--accent-ink);}
+
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:8px;border:1px solid var(--line);
+  background:var(--card);font-size:12.5px;font-weight:600;color:var(--text);
+  transition:all .15s ease;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover{background:var(--accent-ink);}
+.btn.sm{padding:6px 11px;font-size:12px;}
+
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  border:1px solid var(--line);border-radius:8px;
+  padding:8px 12px;background:var(--card);min-width:220px;
+}
+.search-box svg{width:15px;height:15px;color:var(--text-faint);flex-shrink:0;}
+.search-box input{border:none;outline:none;font-size:13px;width:100%;background:transparent;}
+
+.empty-state,.loading-state{
+  padding:50px 20px;text-align:center;color:var(--text-faint);font-size:13px;
+}
+.loading-state .spin{
+  width:22px;height:22px;border-radius:50%;
+  border:2.5px solid var(--line);border-top-color:var(--accent);
+  margin:0 auto 12px;animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.toast{
+  position:fixed;bottom:22px;right:22px;z-index:100;
+  background:var(--ink);color:#fff;padding:12px 18px;border-radius:9px;
+  font-size:13px;font-weight:500;box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:9px;
+  transform:translateY(12px);opacity:0;pointer-events:none;
+  transition:all .25s ease;
+}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error{background:var(--bad);}
+
+/* ---- Mobile ---- */
+.menu-toggle{display:none;}
+@media (max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .2s ease;}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;padding:20px 16px 50px;}
+  .menu-toggle{
+    display:flex;align-items:center;justify-content:center;
+    width:36px;height:36px;border-radius:8px;border:1px solid var(--line);
+    background:var(--card);
+  }
+  .topbar{align-items:flex-start;}
+}
+
+/* ---- View Profile page specific ---- */
+.back-link{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12.5px;font-weight:600;color:var(--text-dim);
+  margin-bottom:18px;
+}
+.back-link:hover{color:var(--accent-ink);}
+
+.profile-header{
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:24px 26px;margin-bottom:18px;
+}
+.avatar{
+  width:64px;height:64px;border-radius:16px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),#8B7BFF);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;
+}
+.profile-header-info{flex:1;min-width:200px;}
+.profile-header-info h2{font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px;}
+.profile-header-info .roll{font-size:12.5px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+.profile-header-badges{display:flex;gap:8px;flex-wrap:wrap;}
+
+.info-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:0;
+}
+.info-item{padding:16px 22px;border-bottom:1px solid var(--line-soft);border-right:1px solid var(--line-soft);}
+.info-item .label{font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.info-item .value{font-size:14px;font-weight:600;}
+
+.section-title{font-size:14px;font-weight:700;margin:24px 0 12px;}
+
+.perf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px;}
+.perf-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow);}
+.perf-card .label{font-size:12px;color:var(--text-dim);font-weight:600;margin-bottom:6px;}
+.perf-card .value{font-size:22px;font-weight:700;letter-spacing:-.4px;}
+
+.section-gap{margin-bottom:24px;}
+
+</style>
+</head>
+<body data-page="">
+
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">A</div>
+      <div class="brand-text">
+        <div class="t1">Admin APECS</div>
+        <div class="t2">CONTROL PANEL</div>
+      </div>
+    </div>
+
+    <div class="status-pill">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Connecting…</span>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html" data-nav="index"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+      <a href="students.html" data-nav="students"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Students</a>
+      <a href="leaderboard.html" data-nav="leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3a2 2 0 0 1-2 4h-1"/><path d="M7 5H4a2 2 0 0 0 2 4h1"/></svg>Leaderboard</a>
+      <a href="subscriptions.html" data-nav="subscriptions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Subscriptions</a>
+      <a href="quiz.html" data-nav="quiz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>Quizzes</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button class="logout-btn" id="logout-btn">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Log out
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-toggle" id="menu-toggle">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div>
+        <h1>Student Profile</h1>
+        <p class="sub">Detailed record for a single student</p>
+      </div>
+    </div>
+
+    <a href="javascript:history.back()" class="back-link">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back
+    </a>
+
+    <div id="profile-content">
+      <div class="loading-state"><div class="spin"></div>Loading profile…</div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+/* ===== APECS Admin — View Profile page logic (self-contained) =====
+   Supabase project + anon key are declared directly in this file
+   so this page works completely on its own. */
+
+const SUPABASE_URL = "https://bhmycvrbucmbbrpzeane.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJobXljdnJidWNtYmJycHplYW5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2OTQwOTYsImV4cCI6MjA4MDI3MDA5Nn0.qQ3bw9cADG0P8hbGwx76Oeg54l-9FbRWxc92nZdSPL4";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ---- shell wiring: active nav link, mobile menu, logout, toast ---- */
+
+document.querySelectorAll(".nav a").forEach((link) => {
+  if (link.getAttribute("data-nav") === document.body.dataset.page) link.classList.add("active");
+});
+
+const menuToggle = document.getElementById("menu-toggle");
+const sidebar = document.getElementById("sidebar");
+if (menuToggle) menuToggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+
+const logoutBtn = document.getElementById("logout-btn");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.href = "login.html";
+  });
+}
+
+const toastEl = document.getElementById("toast");
+function showToast(message, isError = false) {
+  if (!toastEl) return;
+  toastEl.textContent = message;
+  toastEl.classList.toggle("error", isError);
+  toastEl.classList.add("show");
+  setTimeout(() => toastEl.classList.remove("show"), 3200);
+}
+
+/* ---- auth guard: only active admins may view this page ---- */
+
+async function requireAdmin() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    window.location.href = "login.html";
+    return null;
+  }
+
+  const { data: adminRow, error } = await supabase
+    .from("apecs_admins")
+    .select("admin_id, is_active")
+    .eq("user_id", session.user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error || !adminRow) {
+    await supabase.auth.signOut();
+    window.location.href = "login.html";
+    return null;
+  }
+
+  document.getElementById("status-dot")?.classList.remove("off");
+  const statusText = document.getElementById("status-text");
+  if (statusText) statusText.textContent = "Connected";
+
+  return session;
+}
+
+/* ---- page data ---- */
+
+function formatDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function initials(first, last) {
+  return `${(first || "?")[0] || ""}${(last || "")[0] || ""}`.toUpperCase();
+}
+
+async function loadProfile() {
+  const params = new URLSearchParams(window.location.search);
+  const userId = params.get("user_id");
+  const container = document.getElementById("profile-content");
+
+  if (!userId) {
+    container.innerHTML = `<div class="card"><div class="empty-state">No student was specified. Go back and choose “View Profile” from the students or leaderboard list.</div></div>`;
+    return;
+  }
+
+  const [profileRes, subRes, attemptsRes] = await Promise.all([
+    supabase.from("apecs_profiles").select("*").eq("user_id", userId).maybeSingle(),
+    supabase.from("apecs_subscriptions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("apecs_quiz_attempts").select("*").eq("user_id", userId).order("completed_at", { ascending: false }),
+  ]);
+
+  if (profileRes.error || !profileRes.data) {
+    container.innerHTML = `<div class="card"><div class="empty-state">Student not found.</div></div>`;
+    return;
+  }
+
+  const profile = profileRes.data;
+  const sub = subRes.data;
+  const attempts = attemptsRes.data || [];
+
+  const isSubscribed = sub && sub.status === "active" && new Date(sub.ends_at) > new Date();
+  const totalAttempts = attempts.length;
+  const avgPercentage = totalAttempts
+    ? (attempts.reduce((sum, a) => sum + (a.percentage || 0), 0) / totalAttempts).toFixed(1)
+    : "—";
+  const totalScore = attempts.reduce((sum, a) => sum + (a.score || 0), 0);
+
+  container.innerHTML = `
+    <section class="card profile-header">
+      <div class="avatar">${initials(profile.first_name, profile.surname)}</div>
+      <div class="profile-header-info">
+        <h2>${profile.full_name || `${profile.first_name} ${profile.surname}`}</h2>
+        <div class="roll">Roll No. ${profile.roll_number ?? "—"}</div>
+      </div>
+      <div class="profile-header-badges">
+        <span class="badge ${isSubscribed ? "good" : "bad"}">${isSubscribed ? "Subscribed" : "Not Subscribed"}</span>
+      </div>
+    </section>
+
+    <section class="card section-gap">
+      <div class="card-head"><h2>Contact &amp; Personal Details</h2></div>
+      <div class="info-grid">
+        <div class="info-item"><div class="label">Father's Name</div><div class="value">${profile.father_name ?? "—"}</div></div>
+        <div class="info-item"><div class="label">Village</div><div class="value">${profile.village ?? "—"}</div></div>
+        <div class="info-item"><div class="label">Mobile</div><div class="value mono">${profile.mobile ?? "—"}</div></div>
+        <div class="info-item"><div class="label">Email</div><div class="value">${profile.email ?? "—"}</div></div>
+        <div class="info-item"><div class="label">Joined</div><div class="value">${formatDate(profile.created_at)}</div></div>
+        <div class="info-item"><div class="label">Last Updated</div><div class="value">${formatDate(profile.updated_at)}</div></div>
+      </div>
+    </section>
+
+    <section class="card section-gap">
+      <div class="card-head"><h2>Subscription</h2></div>
+      <div class="info-grid">
+        <div class="info-item"><div class="label">Plan</div><div class="value">${sub?.plan_name ?? "No plan"}</div></div>
+        <div class="info-item"><div class="label">Status</div><div class="value">${sub?.status ?? "—"}</div></div>
+        <div class="info-item"><div class="label">Starts</div><div class="value">${sub ? formatDate(sub.starts_at) : "—"}</div></div>
+        <div class="info-item"><div class="label">Ends</div><div class="value">${sub ? formatDate(sub.ends_at) : "—"}</div></div>
+      </div>
+    </section>
+
+    <h3 class="section-title">Quiz Performance</h3>
+    <div class="perf-grid">
+      <div class="perf-card"><div class="label">Total Attempts</div><div class="value mono">${totalAttempts}</div></div>
+      <div class="perf-card"><div class="label">Average Score %</div><div class="value mono">${avgPercentage}${avgPercentage !== "—" ? "%" : ""}</div></div>
+      <div class="perf-card"><div class="label">Total Score</div><div class="value mono">${totalScore}</div></div>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2>Recent Quiz Attempts</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quiz</th>
+              <th>Chapter</th>
+              <th>Score</th>
+              <th>Percentage</th>
+              <th>Correct / Wrong</th>
+              <th>Completed</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              attempts.length === 0
+                ? `<tr><td colspan="6"><div class="empty-state">No quiz attempts yet.</div></td></tr>`
+                : attempts.slice(0, 15).map((a) => `
+                  <tr>
+                    <td class="mono">${a.quiz_id}</td>
+                    <td>${a.chapter_code ?? "—"}</td>
+                    <td class="mono">${a.score}</td>
+                    <td class="mono">${a.percentage?.toFixed?.(1) ?? a.percentage}%</td>
+                    <td class="mono">${a.correct_answers} / ${a.wrong_answers}</td>
+                    <td>${formatDate(a.completed_at)}</td>
+                  </tr>
+                `).join("")
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+(async function init() {
+  const session = await requireAdmin();
+  if (!session) return;
+
+  try {
+    await loadProfile();
+  } catch (err) {
+    showToast(err.message || "Something went wrong while loading this profile.", true);
+  }
+})();
+
+</script>
+</body>
+</html>

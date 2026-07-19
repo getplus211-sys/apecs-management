@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quizzes — Admin APECS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== APECS Admin — shared design tokens & shell =====
+   This block is intentionally duplicated in every page's CSS file
+   so each page remains fully self-contained and independently editable. */
+
+:root{
+  --ink:#10132A;
+  --ink-soft:#1B1F3B;
+  --line:#E5E7F0;
+  --line-soft:#EEF0F7;
+  --paper:#F5F6FA;
+  --card:#FFFFFF;
+  --text:#1C1F33;
+  --text-dim:#6B7089;
+  --text-faint:#9296AC;
+  --accent:#4F46E5;
+  --accent-soft:#EEEDFD;
+  --accent-ink:#3730A3;
+  --good:#16A34A;
+  --good-soft:#E9F9EF;
+  --warn:#D97706;
+  --warn-soft:#FEF3E2;
+  --bad:#DC2626;
+  --bad-soft:#FDEDED;
+  --sidebar-w:230px;
+  --radius:10px;
+  --radius-lg:14px;
+  --shadow:0 1px 2px rgba(16,19,42,0.04), 0 8px 24px -12px rgba(16,19,42,0.12);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+.mono{font-family:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+ul{list-style:none;}
+
+/* ---- App shell ---- */
+.app-shell{display:flex;min-height:100vh;}
+
+.sidebar{
+  width:var(--sidebar-w);
+  flex-shrink:0;
+  background:var(--ink);
+  color:#C7C9E8;
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  top:0;left:0;bottom:0;
+  z-index:40;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:22px 20px 18px;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.brand-mark{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent),#8B7BFF);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;
+  font-weight:700;font-size:13px;color:#fff;
+  flex-shrink:0;
+}
+.brand-text{line-height:1.15;}
+.brand-text .t1{font-weight:700;font-size:14.5px;color:#fff;letter-spacing:.2px;}
+.brand-text .t2{font-size:11px;color:#8489B5;font-family:'JetBrains Mono',monospace;letter-spacing:.4px;}
+
+.status-pill{
+  margin:14px 20px 0;
+  display:flex;align-items:center;gap:7px;
+  font-size:11px;color:#8489B5;
+  font-family:'JetBrains Mono',monospace;
+}
+.status-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--good);
+  box-shadow:0 0 0 3px rgba(22,163,74,0.2);
+}
+.status-dot.off{background:var(--bad);box-shadow:0 0 0 3px rgba(220,38,38,0.2);}
+
+.nav{padding:18px 12px;flex:1;display:flex;flex-direction:column;gap:2px;}
+.nav a{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 12px;border-radius:8px;
+  font-size:13.5px;font-weight:500;color:#AEB2D6;
+  transition:background .15s ease,color .15s ease;
+}
+.nav a svg{width:17px;height:17px;flex-shrink:0;opacity:.85;}
+.nav a:hover{background:rgba(255,255,255,0.06);color:#fff;}
+.nav a.active{background:var(--accent);color:#fff;}
+.nav a.active svg{opacity:1;}
+
+.sidebar-foot{padding:14px 12px 18px;border-top:1px solid rgba(255,255,255,0.08);}
+.logout-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);
+  background:transparent;color:#C7C9E8;font-size:13px;font-weight:600;
+  transition:all .15s ease;
+}
+.logout-btn:hover{background:rgba(220,38,38,0.15);border-color:rgba(220,38,38,0.4);color:#FCA5A5;}
+
+.main{
+  margin-left:var(--sidebar-w);
+  flex:1;
+  min-width:0;
+  padding:28px 34px 60px;
+}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:26px;flex-wrap:wrap;gap:14px;
+}
+.topbar h1{font-size:21px;font-weight:700;letter-spacing:-.2px;}
+.topbar .sub{font-size:13px;color:var(--text-dim);margin-top:3px;}
+
+/* ---- Cards / tables ---- */
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+}
+.card-pad{padding:20px 22px;}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 22px;border-bottom:1px solid var(--line-soft);
+  flex-wrap:wrap;gap:10px;
+}
+.card-head h2{font-size:15px;font-weight:700;}
+.card-head .count{font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{
+  text-align:left;padding:12px 22px;font-size:11px;font-weight:700;
+  color:var(--text-faint);text-transform:uppercase;letter-spacing:.5px;
+  border-bottom:1px solid var(--line);white-space:nowrap;
+}
+tbody td{padding:13px 22px;border-bottom:1px solid var(--line-soft);white-space:nowrap;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--paper);}
+
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;
+}
+.badge.good{background:var(--good-soft);color:var(--good);}
+.badge.bad{background:var(--bad-soft);color:var(--bad);}
+.badge.warn{background:var(--warn-soft);color:var(--warn);}
+.badge.neutral{background:var(--accent-soft);color:var(--accent-ink);}
+
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:8px;border:1px solid var(--line);
+  background:var(--card);font-size:12.5px;font-weight:600;color:var(--text);
+  transition:all .15s ease;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover{background:var(--accent-ink);}
+.btn.sm{padding:6px 11px;font-size:12px;}
+
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  border:1px solid var(--line);border-radius:8px;
+  padding:8px 12px;background:var(--card);min-width:220px;
+}
+.search-box svg{width:15px;height:15px;color:var(--text-faint);flex-shrink:0;}
+.search-box input{border:none;outline:none;font-size:13px;width:100%;background:transparent;}
+
+.empty-state,.loading-state{
+  padding:50px 20px;text-align:center;color:var(--text-faint);font-size:13px;
+}
+.loading-state .spin{
+  width:22px;height:22px;border-radius:50%;
+  border:2.5px solid var(--line);border-top-color:var(--accent);
+  margin:0 auto 12px;animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.toast{
+  position:fixed;bottom:22px;right:22px;z-index:100;
+  background:var(--ink);color:#fff;padding:12px 18px;border-radius:9px;
+  font-size:13px;font-weight:500;box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:9px;
+  transform:translateY(12px);opacity:0;pointer-events:none;
+  transition:all .25s ease;
+}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error{background:var(--bad);}
+
+/* ---- Mobile ---- */
+.menu-toggle{display:none;}
+@media (max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .2s ease;}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;padding:20px 16px 50px;}
+  .menu-toggle{
+    display:flex;align-items:center;justify-content:center;
+    width:36px;height:36px;border-radius:8px;border:1px solid var(--line);
+    background:var(--card);
+  }
+  .topbar{align-items:flex-start;}
+}
+
+/* ---- Quizzes page specific ---- */
+.head-actions{display:flex;align-items:center;gap:14px;}
+.quiz-name{font-weight:600;}
+.quiz-name .sub-line{display:block;font-size:11.5px;color:var(--text-faint);font-weight:400;margin-top:1px;font-family:'JetBrains Mono',monospace;}
+
+</style>
+</head>
+<body data-page="quiz">
+
+<div class="app-shell">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">A</div>
+      <div class="brand-text">
+        <div class="t1">Admin APECS</div>
+        <div class="t2">CONTROL PANEL</div>
+      </div>
+    </div>
+
+    <div class="status-pill">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Connecting…</span>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html" data-nav="index"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+      <a href="students.html" data-nav="students"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Students</a>
+      <a href="leaderboard.html" data-nav="leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3a2 2 0 0 1-2 4h-1"/><path d="M7 5H4a2 2 0 0 0 2 4h1"/></svg>Leaderboard</a>
+      <a href="subscriptions.html" data-nav="subscriptions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Subscriptions</a>
+      <a href="quiz.html" data-nav="quiz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>Quizzes</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button class="logout-btn" id="logout-btn">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Log out
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-toggle" id="menu-toggle">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div>
+        <h1>APECS Quizzes</h1>
+        <p class="sub">All quizzes configured in the system</p>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Quiz List</h2>
+        <div class="head-actions">
+          <span class="count" id="quiz-count"></span>
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="search-input" placeholder="Search quiz name, chapter…">
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quiz</th>
+              <th>Chapter</th>
+              <th>Difficulty</th>
+              <th>Questions</th>
+              <th>Time Limit</th>
+              <th>Window</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="quiz-body">
+            <tr><td colspan="7"><div class="loading-state"><div class="spin"></div>Loading quizzes…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+/* ===== APECS Admin — Quizzes page logic (self-contained) =====
+   Supabase project + anon key are declared directly in this file
+   so this page works completely on its own. */
+
+const SUPABASE_URL = "https://bhmycvrbucmbbrpzeane.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJobXljdnJidWNtYmJycHplYW5lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2OTQwOTYsImV4cCI6MjA4MDI3MDA5Nn0.qQ3bw9cADG0P8hbGwx76Oeg54l-9FbRWxc92nZdSPL4";
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ---- shell wiring: active nav link, mobile menu, logout, toast ---- */
+
+document.querySelectorAll(".nav a").forEach((link) => {
+  if (link.getAttribute("data-nav") === document.body.dataset.page) link.classList.add("active");
+});
+
+const menuToggle = document.getElementById("menu-toggle");
+const sidebar = document.getElementById("sidebar");
+if (menuToggle) menuToggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+
+const logoutBtn = document.getElementById("logout-btn");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.href = "login.html";
+  });
+}
+
+const toastEl = document.getElementById("toast");
+function showToast(message, isError = false) {
+  if (!toastEl) return;
+  toastEl.textContent = message;
+  toastEl.classList.toggle("error", isError);
+  toastEl.classList.add("show");
+  setTimeout(() => toastEl.classList.remove("show"), 3200);
+}
+
+/* ---- auth guard: only active admins may view this page ---- */
+
+async function requireAdmin() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    window.location.href = "login.html";
+    return null;
+  }
+
+  const { data: adminRow, error } = await supabase
+    .from("apecs_admins")
+    .select("admin_id, is_active")
+    .eq("user_id", session.user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error || !adminRow) {
+    await supabase.auth.signOut();
+    window.location.href = "login.html";
+    return null;
+  }
+
+  document.getElementById("status-dot")?.classList.remove("off");
+  const statusText = document.getElementById("status-text");
+  if (statusText) statusText.textContent = "Connected";
+
+  return session;
+}
+
+/* ---- page data ---- */
+
+let allQuizzes = [];
+
+function formatDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function difficultyBadge(level) {
+  const l = (level || "").toLowerCase();
+  if (l === "easy") return `<span class="badge good">Easy</span>`;
+  if (l === "hard") return `<span class="badge bad">Hard</span>`;
+  if (l === "medium") return `<span class="badge warn">Medium</span>`;
+  return `<span class="badge neutral">${level || "—"}</span>`;
+}
+
+function renderQuizzes(rows) {
+  const tbody = document.getElementById("quiz-body");
+  document.getElementById("quiz-count").textContent = `${rows.length} quiz${rows.length === 1 ? "" : "zes"}`;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">No quizzes match your search.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((q) => `
+    <tr>
+      <td>
+        <span class="quiz-name">${q.quiz_name}
+          <span class="sub-line">${q.quiz_id}</span>
+        </span>
+      </td>
+      <td>${q.chapter_code}</td>
+      <td>${difficultyBadge(q.difficulty_level)}</td>
+      <td class="mono">${q.total_questions}</td>
+      <td class="mono">${q.time_limit ? `${q.time_limit}s` : "—"}</td>
+      <td>${q.start_date ? `${formatDate(q.start_date)} → ${formatDate(q.end_date)}` : "Always open"}</td>
+      <td><span class="badge ${q.is_active ? "good" : "bad"}">${q.is_active ? "Active" : "Inactive"}</span></td>
+    </tr>
+  `).join("");
+}
+
+async function loadQuizzes() {
+  const { data, error } = await supabase
+    .from("apecs_quizzes")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    document.getElementById("quiz-body").innerHTML =
+      `<tr><td colspan="7"><div class="empty-state">Could not load quizzes: ${error.message}</div></td></tr>`;
+    return;
+  }
+
+  allQuizzes = data || [];
+  renderQuizzes(allQuizzes);
+}
+
+document.getElementById("search-input").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  if (!q) {
+    renderQuizzes(allQuizzes);
+    return;
+  }
+  renderQuizzes(allQuizzes.filter((qz) =>
+    qz.quiz_name.toLowerCase().includes(q) || (qz.chapter_code || "").toLowerCase().includes(q)
+  ));
+});
+
+(async function init() {
+  const session = await requireAdmin();
+  if (!session) return;
+
+  try {
+    await loadQuizzes();
+  } catch (err) {
+    showToast(err.message || "Something went wrong while loading quizzes.", true);
+  }
+})();
+
+</script>
+</body>
+</html>
