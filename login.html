@@ -127,7 +127,7 @@ h1{font-size:22px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px;}
     <h1>Sign in</h1>
     <p class="hint">This login is restricted to registered administrators only.</p>
 
-    <form id="login-form" autocomplete="off">
+    <form id="login-form" autocomplete="off" onsubmit="event.preventDefault();">
       <label class="field">
         <span>Email</span>
         <input type="email" id="email" name="email" placeholder="admin@example.com" required autocomplete="username">
@@ -151,6 +151,12 @@ h1{font-size:22px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px;}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
+(function () {
+"use strict";
+
+if (window.__apecs_login_loaded) return; // guard: never re-run this page's script twice
+window.__apecs_login_loaded = true;
+
 /* ===== APECS Admin — Login page logic (self-contained) =====
    Supabase project + anon key are declared directly in this file
    so this page works completely on its own. */
@@ -227,6 +233,8 @@ form.addEventListener("submit", async (e) => {
 
   await verifyAdminAndRedirect(data.user.id);
 });
+
+})();
 
 </script>
 </body>
