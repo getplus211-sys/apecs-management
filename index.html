@@ -242,11 +242,16 @@ tbody tr:hover{background:var(--paper);}
 .stat-label{font-size:12.5px;color:var(--text-dim);font-weight:600;margin-bottom:6px;}
 .stat-value{font-size:26px;font-weight:700;letter-spacing:-.5px;}
 
+/* ---- Hide the shell until the admin check passes, so a JS error
+       or slow network never leaves protected data visible. ---- */
+.app-shell{opacity:0;pointer-events:none;transition:opacity .18s ease;}
+.app-shell.ready{opacity:1;pointer-events:auto;}
+
 </style>
 </head>
 <body data-page="index">
 
-<div class="app-shell">
+<div class="app-shell" id="app-shell">
 
   <aside class="sidebar" id="sidebar">
     <div class="brand">
@@ -341,6 +346,9 @@ tbody tr:hover{background:var(--paper);}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
+(function () {
+"use strict";
+
 /* ===== APECS Admin — Dashboard page logic (self-contained) =====
    Supabase project + anon key are declared directly in this file
    so this page works completely on its own. */
@@ -402,6 +410,7 @@ async function requireAdmin() {
   document.getElementById("status-dot")?.classList.remove("off");
   const statusText = document.getElementById("status-text");
   if (statusText) statusText.textContent = "Connected";
+  document.getElementById("app-shell")?.classList.add("ready");
 
   return session;
 }
@@ -467,6 +476,8 @@ async function loadTopLeaderboard() {
   } catch (err) {
     showToast(err.message || "Something went wrong while loading the dashboard.", true);
   }
+})();
+
 })();
 
 </script>
