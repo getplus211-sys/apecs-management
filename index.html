@@ -207,17 +207,50 @@ tbody tr:hover{background:var(--paper);}
 .toast.error{background:var(--bad);}
 
 /* ---- Mobile ---- */
+html{-webkit-text-size-adjust:100%;}
+body{overflow-x:hidden;}
 .menu-toggle{display:none;}
+.sidebar-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(16,19,42,0.45);z-index:35;
+  opacity:0;transition:opacity .2s ease;
+}
+.sidebar-overlay.show{display:block;opacity:1;}
+
 @media (max-width:900px){
   .sidebar{transform:translateX(-100%);transition:transform .2s ease;}
   .sidebar.open{transform:translateX(0);}
-  .main{margin-left:0;padding:20px 16px 50px;}
+  .main{margin-left:0;padding:18px 16px 50px;}
   .menu-toggle{
     display:flex;align-items:center;justify-content:center;
-    width:36px;height:36px;border-radius:8px;border:1px solid var(--line);
-    background:var(--card);
+    width:38px;height:38px;border-radius:8px;border:1px solid var(--line);
+    background:var(--card);flex-shrink:0;
   }
-  .topbar{align-items:flex-start;}
+  .topbar{align-items:flex-start;gap:12px;}
+  .topbar h1{font-size:19px;}
+
+  .card-head{flex-direction:column;align-items:stretch;gap:12px;}
+  .head-actions{width:100%;flex-direction:column;align-items:stretch;gap:10px;}
+  .search-box{width:100%;min-width:0;}
+
+  table{font-size:12.5px;}
+  thead th{padding:10px 14px;}
+  tbody td{padding:11px 14px;}
+  .table-wrap{-webkit-overflow-scrolling:touch;}
+
+  .card-pad{padding:16px 18px;}
+}
+
+@media (max-width:480px){
+  .main{padding:14px 12px 44px;}
+  .brand{padding:18px 16px 14px;}
+  .nav{padding:14px 10px;}
+  .topbar h1{font-size:17px;}
+  .topbar .sub{font-size:12px;}
+  .btn{padding:9px 12px;font-size:12.5px;}
+  table{font-size:12px;}
+  thead th{padding:9px 12px;font-size:10.5px;}
+  tbody td{padding:10px 12px;}
 }
 
 /* ---- Dashboard page specific ---- */
@@ -247,12 +280,57 @@ tbody tr:hover{background:var(--paper);}
 .app-shell{opacity:0;pointer-events:none;transition:opacity .18s ease;}
 .app-shell.ready{opacity:1;pointer-events:auto;}
 
+/* ---- Dashboard: mobile stat grid ---- */
+@media (max-width:520px){
+  .stat-grid{grid-template-columns:1fr 1fr;gap:10px;}
+  .stat-card{padding:14px 14px;}
+  .stat-value{font-size:21px;}
+}
+
+/* ---- Mobile backdrop (shown behind the sidebar when it's open) ---- */
+.sidebar-backdrop{display:none;}
+@media (max-width:900px){
+  .sidebar-backdrop.show{
+    display:block;position:fixed;inset:0;
+    background:rgba(10,12,30,0.45);
+    z-index:35;
+  }
+}
+
+/* ---- Finer mobile layout tuning ---- */
+@media (max-width:600px){
+  .topbar h1{font-size:18px;}
+  .topbar .sub{font-size:12px;}
+  .card-head{flex-direction:column;align-items:stretch;gap:10px;}
+  .card-head .head-actions{flex-direction:column;align-items:stretch;width:100%;gap:8px;}
+  .search-box{width:100%;min-width:0;}
+  .card-pad{padding:16px;}
+  thead th{padding:10px 14px;font-size:10px;}
+  tbody td{padding:11px 14px;font-size:12.5px;}
+  .btn{padding:9px 13px;}
+  .btn.sm{padding:8px 12px;}
+  .stat-grid{grid-template-columns:1fr 1fr;gap:12px;}
+  .stat-card{padding:14px 16px;}
+  .stat-value{font-size:21px;}
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+  .tab-btn{white-space:nowrap;}
+  .profile-header{padding:18px 16px;gap:14px;}
+  .avatar{width:52px;height:52px;font-size:18px;}
+  .info-item{padding:13px 16px;}
+  .perf-grid{grid-template-columns:1fr 1fr;gap:10px;}
+}
+@media (max-width:400px){
+  .stat-grid{grid-template-columns:1fr;}
+  .perf-grid{grid-template-columns:1fr;}
+}
+
 </style>
 </head>
 <body data-page="index">
 
 <div class="app-shell" id="app-shell">
 
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-mark">A</div>
@@ -282,6 +360,8 @@ tbody tr:hover{background:var(--paper);}
       </button>
     </div>
   </aside>
+
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <main class="main">
     <div class="topbar">
@@ -349,6 +429,9 @@ tbody tr:hover{background:var(--paper);}
 (function () {
 "use strict";
 
+if (window.__apecs_index_loaded) return; // guard: never re-run this page's script twice
+window.__apecs_index_loaded = true;
+
 /* ===== APECS Admin — Dashboard page logic (self-contained) =====
    Supabase project + anon key are declared directly in this file
    so this page works completely on its own. */
@@ -366,7 +449,23 @@ document.querySelectorAll(".nav a").forEach((link) => {
 
 const menuToggle = document.getElementById("menu-toggle");
 const sidebar = document.getElementById("sidebar");
-if (menuToggle) menuToggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+
+function openSidebar() {
+  sidebar.classList.add("open");
+  sidebarBackdrop?.classList.add("show");
+}
+function closeSidebar() {
+  sidebar.classList.remove("open");
+  sidebarBackdrop?.classList.remove("show");
+}
+if (menuToggle) {
+  menuToggle.addEventListener("click", () => {
+    sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
+  });
+}
+sidebarBackdrop?.addEventListener("click", closeSidebar);
+document.querySelectorAll(".nav a").forEach((link) => link.addEventListener("click", closeSidebar));
 
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
