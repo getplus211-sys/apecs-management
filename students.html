@@ -449,31 +449,45 @@ function showToast(message, isError = false) {
 /* ---- auth guard: only active admins may view this page ---- */
 
 async function requireAdmin() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    window.location.href = "login.html";
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+
+    if (!session) {
+      window.location.href = "login.html";
+      return null;
+    }
+
+    const { data: adminRow, error } = await supabase
+      .from("apecs_admins")
+      .select("admin_id, is_active")
+      .eq("user_id", session.user.id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!adminRow) {
+      await supabase.auth.signOut();
+      window.location.href = "login.html";
+      return null;
+    }
+
+    document.getElementById("status-dot")?.classList.remove("off");
+    const statusText = document.getElementById("status-text");
+    if (statusText) statusText.textContent = "Connected";
+    document.getElementById("app-shell")?.classList.add("ready");
+
+    return session;
+  } catch (err) {
+    // Never let an unexpected error leave the page silently blank.
+    document.getElementById("app-shell")?.classList.add("ready");
+    document.getElementById("status-dot")?.classList.add("off");
+    const statusText = document.getElementById("status-text");
+    if (statusText) statusText.textContent = "Connection error";
+    showToast(err.message || "Could not verify admin access. Check your connection and refresh.", true);
     return null;
   }
-
-  const { data: adminRow, error } = await supabase
-    .from("apecs_admins")
-    .select("admin_id, is_active")
-    .eq("user_id", session.user.id)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error || !adminRow) {
-    await supabase.auth.signOut();
-    window.location.href = "login.html";
-    return null;
-  }
-
-  document.getElementById("status-dot")?.classList.remove("off");
-  const statusText = document.getElementById("status-text");
-  if (statusText) statusText.textContent = "Connected";
-  document.getElementById("app-shell")?.classList.add("ready");
-
-  return session;
 }
 
 /* ---- page data ---- */
