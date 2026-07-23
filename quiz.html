@@ -207,28 +207,148 @@ tbody tr:hover{background:var(--paper);}
 .toast.error{background:var(--bad);}
 
 /* ---- Mobile ---- */
+html{-webkit-text-size-adjust:100%;}
+body{overflow-x:hidden;}
 .menu-toggle{display:none;}
+.sidebar-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(16,19,42,0.45);z-index:35;
+  opacity:0;transition:opacity .2s ease;
+}
+.sidebar-overlay.show{display:block;opacity:1;}
+
 @media (max-width:900px){
   .sidebar{transform:translateX(-100%);transition:transform .2s ease;}
   .sidebar.open{transform:translateX(0);}
-  .main{margin-left:0;padding:20px 16px 50px;}
+  .main{margin-left:0;padding:18px 16px 50px;}
   .menu-toggle{
     display:flex;align-items:center;justify-content:center;
-    width:36px;height:36px;border-radius:8px;border:1px solid var(--line);
-    background:var(--card);
+    width:38px;height:38px;border-radius:8px;border:1px solid var(--line);
+    background:var(--card);flex-shrink:0;
   }
-  .topbar{align-items:flex-start;}
+  .topbar{align-items:flex-start;gap:12px;}
+  .topbar h1{font-size:19px;}
+
+  .card-head{flex-direction:column;align-items:stretch;gap:12px;}
+  .head-actions{width:100%;flex-direction:column;align-items:stretch;gap:10px;}
+  .search-box{width:100%;min-width:0;}
+
+  table{font-size:12.5px;}
+  thead th{padding:10px 14px;}
+  tbody td{padding:11px 14px;}
+  .table-wrap{-webkit-overflow-scrolling:touch;}
+
+  .card-pad{padding:16px 18px;}
+}
+
+@media (max-width:480px){
+  .main{padding:14px 12px 44px;}
+  .brand{padding:18px 16px 14px;}
+  .nav{padding:14px 10px;}
+  .topbar h1{font-size:17px;}
+  .topbar .sub{font-size:12px;}
+  .btn{padding:9px 12px;font-size:12.5px;}
+  table{font-size:12px;}
+  thead th{padding:9px 12px;font-size:10.5px;}
+  tbody td{padding:10px 12px;}
 }
 
 /* ---- Quizzes page specific ---- */
 .head-actions{display:flex;align-items:center;gap:14px;}
-.quiz-name{font-weight:600;}
-.quiz-name .sub-line{display:block;font-size:11.5px;color:var(--text-faint);font-weight:400;margin-top:1px;font-family:'JetBrains Mono',monospace;}
+
+.quiz-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:16px;
+  padding:20px 22px;
+}
+.quiz-grid .loading-state,.quiz-grid .empty-state{grid-column:1/-1;}
+
+.quiz-card{
+  border:1px solid var(--line);border-radius:var(--radius-lg);
+  padding:18px 20px;background:#FBFBFD;
+  display:flex;flex-direction:column;gap:12px;
+}
+.quiz-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.quiz-card-head h3{font-size:15px;font-weight:700;line-height:1.3;}
+.quiz-card-head .quiz-id{display:block;font-size:11px;color:var(--text-faint);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+
+.quiz-meta{display:flex;flex-wrap:wrap;gap:6px;}
+
+.quiz-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  padding:12px 0;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);
+}
+.quiz-stats .item .label{font-size:10.5px;color:var(--text-faint);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;}
+.quiz-stats .item .value{font-size:13.5px;font-weight:700;}
+
+.quiz-window{font-size:12px;color:var(--text-dim);}
+
+.quiz-card-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;}
+
+/* ---- Active / inactive toggle switch ---- */
+.toggle-switch{
+  display:inline-flex;align-items:center;gap:8px;
+  border:none;background:none;padding:0;
+}
+.toggle-track{
+  width:38px;height:22px;border-radius:20px;background:var(--line);
+  position:relative;transition:background .15s ease;flex-shrink:0;
+}
+.toggle-track::after{
+  content:"";position:absolute;top:2px;left:2px;
+  width:18px;height:18px;border-radius:50%;background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,0.25);
+  transition:transform .15s ease;
+}
+.toggle-switch.on .toggle-track{background:var(--good);}
+.toggle-switch.on .toggle-track::after{transform:translateX(16px);}
+.toggle-switch:disabled{opacity:.6;cursor:wait;}
+.toggle-label{font-size:12px;font-weight:700;}
+.toggle-switch.on .toggle-label{color:var(--good);}
+.toggle-switch:not(.on) .toggle-label{color:var(--bad);}
 
 /* ---- Hide the shell until the admin check passes, so a JS error
        or slow network never leaves protected data visible. ---- */
 .app-shell{opacity:0;pointer-events:none;transition:opacity .18s ease;}
 .app-shell.ready{opacity:1;pointer-events:auto;}
+
+/* ---- Mobile backdrop (shown behind the sidebar when it's open) ---- */
+.sidebar-backdrop{display:none;}
+@media (max-width:900px){
+  .sidebar-backdrop.show{
+    display:block;position:fixed;inset:0;
+    background:rgba(10,12,30,0.45);
+    z-index:35;
+  }
+}
+
+/* ---- Finer mobile layout tuning ---- */
+@media (max-width:600px){
+  .topbar h1{font-size:18px;}
+  .topbar .sub{font-size:12px;}
+  .card-head{flex-direction:column;align-items:stretch;gap:10px;}
+  .card-head .head-actions{flex-direction:column;align-items:stretch;width:100%;gap:8px;}
+  .search-box{width:100%;min-width:0;}
+  .card-pad{padding:16px;}
+  thead th{padding:10px 14px;font-size:10px;}
+  tbody td{padding:11px 14px;font-size:12.5px;}
+  .btn{padding:9px 13px;}
+  .btn.sm{padding:8px 12px;}
+  .stat-grid{grid-template-columns:1fr 1fr;gap:12px;}
+  .stat-card{padding:14px 16px;}
+  .stat-value{font-size:21px;}
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+  .tab-btn{white-space:nowrap;}
+  .profile-header{padding:18px 16px;gap:14px;}
+  .avatar{width:52px;height:52px;font-size:18px;}
+  .info-item{padding:13px 16px;}
+  .perf-grid{grid-template-columns:1fr 1fr;gap:10px;}
+}
+@media (max-width:400px){
+  .stat-grid{grid-template-columns:1fr;}
+  .perf-grid{grid-template-columns:1fr;}
+}
 
 </style>
 </head>
@@ -236,6 +356,7 @@ tbody tr:hover{background:var(--paper);}
 
 <div class="app-shell" id="app-shell">
 
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-mark">A</div>
@@ -266,6 +387,8 @@ tbody tr:hover{background:var(--paper);}
     </div>
   </aside>
 
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
   <main class="main">
     <div class="topbar">
       <button class="menu-toggle" id="menu-toggle">
@@ -288,23 +411,8 @@ tbody tr:hover{background:var(--paper);}
           </div>
         </div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Quiz</th>
-              <th>Chapter</th>
-              <th>Difficulty</th>
-              <th>Questions</th>
-              <th>Time Limit</th>
-              <th>Window</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="quiz-body">
-            <tr><td colspan="7"><div class="loading-state"><div class="spin"></div>Loading quizzes…</div></td></tr>
-          </tbody>
-        </table>
+      <div class="quiz-grid" id="quiz-grid">
+        <div class="loading-state"><div class="spin"></div>Loading quizzes…</div>
       </div>
     </section>
   </main>
@@ -337,7 +445,23 @@ document.querySelectorAll(".nav a").forEach((link) => {
 
 const menuToggle = document.getElementById("menu-toggle");
 const sidebar = document.getElementById("sidebar");
-if (menuToggle) menuToggle.addEventListener("click", () => sidebar.classList.toggle("open"));
+const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+
+function openSidebar() {
+  sidebar.classList.add("open");
+  sidebarBackdrop?.classList.add("show");
+}
+function closeSidebar() {
+  sidebar.classList.remove("open");
+  sidebarBackdrop?.classList.remove("show");
+}
+if (menuToggle) {
+  menuToggle.addEventListener("click", () => {
+    sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
+  });
+}
+sidebarBackdrop?.addEventListener("click", closeSidebar);
+document.querySelectorAll(".nav a").forEach((link) => link.addEventListener("click", closeSidebar));
 
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
@@ -359,31 +483,45 @@ function showToast(message, isError = false) {
 /* ---- auth guard: only active admins may view this page ---- */
 
 async function requireAdmin() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    window.location.href = "login.html";
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+
+    if (!session) {
+      window.location.href = "login.html";
+      return null;
+    }
+
+    const { data: adminRow, error } = await supabase
+      .from("apecs_admins")
+      .select("admin_id, is_active")
+      .eq("user_id", session.user.id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!adminRow) {
+      await supabase.auth.signOut();
+      window.location.href = "login.html";
+      return null;
+    }
+
+    document.getElementById("status-dot")?.classList.remove("off");
+    const statusText = document.getElementById("status-text");
+    if (statusText) statusText.textContent = "Connected";
+    document.getElementById("app-shell")?.classList.add("ready");
+
+    return session;
+  } catch (err) {
+    // Never let an unexpected error leave the page silently blank.
+    document.getElementById("app-shell")?.classList.add("ready");
+    document.getElementById("status-dot")?.classList.add("off");
+    const statusText = document.getElementById("status-text");
+    if (statusText) statusText.textContent = "Connection error";
+    showToast(err.message || "Could not verify admin access. Check your connection and refresh.", true);
     return null;
   }
-
-  const { data: adminRow, error } = await supabase
-    .from("apecs_admins")
-    .select("admin_id, is_active")
-    .eq("user_id", session.user.id)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error || !adminRow) {
-    await supabase.auth.signOut();
-    window.location.href = "login.html";
-    return null;
-  }
-
-  document.getElementById("status-dot")?.classList.remove("off");
-  const statusText = document.getElementById("status-text");
-  if (statusText) statusText.textContent = "Connected";
-  document.getElementById("app-shell")?.classList.add("ready");
-
-  return session;
 }
 
 /* ---- page data ---- */
@@ -404,30 +542,82 @@ function difficultyBadge(level) {
   return `<span class="badge neutral">${level || "—"}</span>`;
 }
 
+function negativeMarkingBadge(value) {
+  const n = Number(value);
+  if (!n) return `<span class="badge neutral">No negative marking</span>`;
+  return `<span class="badge warn">−${Math.abs(n)} per wrong answer</span>`;
+}
+
 function renderQuizzes(rows) {
-  const tbody = document.getElementById("quiz-body");
+  const grid = document.getElementById("quiz-grid");
   document.getElementById("quiz-count").textContent = `${rows.length} quiz${rows.length === 1 ? "" : "zes"}`;
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">No quizzes match your search.</div></td></tr>`;
+    grid.innerHTML = `<div class="empty-state">No quizzes match your search.</div>`;
     return;
   }
 
-  tbody.innerHTML = rows.map((q) => `
-    <tr>
-      <td>
-        <span class="quiz-name">${q.quiz_name}
-          <span class="sub-line">${q.quiz_id}</span>
-        </span>
-      </td>
-      <td>${q.chapter_code}</td>
-      <td>${difficultyBadge(q.difficulty_level)}</td>
-      <td class="mono">${q.total_questions}</td>
-      <td class="mono">${q.time_limit ? `${q.time_limit}s` : "—"}</td>
-      <td>${q.start_date ? `${formatDate(q.start_date)} → ${formatDate(q.end_date)}` : "Always open"}</td>
-      <td><span class="badge ${q.is_active ? "good" : "bad"}">${q.is_active ? "Active" : "Inactive"}</span></td>
-    </tr>
+  grid.innerHTML = rows.map((q) => `
+    <div class="quiz-card" data-id="${q.id}">
+      <div class="quiz-card-head">
+        <h3>${q.quiz_name}<span class="quiz-id">${q.quiz_id}</span></h3>
+      </div>
+      <div class="quiz-meta">
+        <span class="badge neutral">${q.chapter_code}</span>
+        ${difficultyBadge(q.difficulty_level)}
+        ${negativeMarkingBadge(q.negative_marking)}
+      </div>
+      <div class="quiz-stats">
+        <div class="item"><div class="label">Questions</div><div class="value mono">${q.total_questions}</div></div>
+        <div class="item"><div class="label">Time Limit</div><div class="value mono">${q.time_limit ? `${q.time_limit}s` : "—"}</div></div>
+        <div class="item"><div class="label">Negative Marks</div><div class="value mono">${q.negative_marking ? `−${q.negative_marking}` : "0"}</div></div>
+      </div>
+      <div class="quiz-window">${q.start_date ? `Open ${formatDate(q.start_date)} → ${formatDate(q.end_date)}` : "Always open"}</div>
+      <div class="quiz-card-actions">
+        <button type="button" class="toggle-switch ${q.is_active ? "on" : ""}" data-id="${q.id}" data-active="${q.is_active}">
+          <span class="toggle-track"></span>
+          <span class="toggle-label">${q.is_active ? "Active" : "Inactive"}</span>
+        </button>
+        <a class="btn sm" href="leaderboard.html?quiz_id=${encodeURIComponent(q.quiz_id)}">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/></svg>
+          Leaderboard
+        </a>
+      </div>
+    </div>
   `).join("");
+
+  grid.querySelectorAll(".toggle-switch").forEach((btn) => {
+    btn.addEventListener("click", () => toggleQuizStatus(btn));
+  });
+}
+
+async function toggleQuizStatus(btn) {
+  const id = btn.dataset.id;
+  const currentlyActive = btn.dataset.active === "true";
+  const nextActive = !currentlyActive;
+
+  btn.disabled = true;
+
+  const { error } = await supabase
+    .from("apecs_quizzes")
+    .update({ is_active: nextActive, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  btn.disabled = false;
+
+  if (error) {
+    showToast(`Could not update quiz status: ${error.message}`, true);
+    return;
+  }
+
+  btn.dataset.active = String(nextActive);
+  btn.classList.toggle("on", nextActive);
+  btn.querySelector(".toggle-label").textContent = nextActive ? "Active" : "Inactive";
+
+  const quiz = allQuizzes.find((q) => q.id === id);
+  if (quiz) quiz.is_active = nextActive;
+
+  showToast(`Quiz marked ${nextActive ? "active" : "inactive"}.`);
 }
 
 async function loadQuizzes() {
@@ -437,12 +627,20 @@ async function loadQuizzes() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    document.getElementById("quiz-body").innerHTML =
-      `<tr><td colspan="7"><div class="empty-state">Could not load quizzes: ${error.message}</div></td></tr>`;
+    document.getElementById("quiz-grid").innerHTML =
+      `<div class="empty-state">Could not load quizzes: ${error.message}</div>`;
+    showToast(`Quiz list error: ${error.message}`, true);
     return;
   }
 
   allQuizzes = data || [];
+
+  if (allQuizzes.length === 0) {
+    document.getElementById("quiz-grid").innerHTML = `<div class="empty-state">No quizzes have been created yet.</div>`;
+    document.getElementById("quiz-count").textContent = "0 quizzes";
+    return;
+  }
+
   renderQuizzes(allQuizzes);
 }
 
