@@ -382,7 +382,7 @@ body{overflow-x:hidden;}
             <tr>
               <th>Rank</th>
               <th>Student</th>
-              <th>Chapter</th>
+              <th id="lb-chapter-header">Chapter</th>
               <th>Score</th>
               <th>Percentage</th>
               <th>Correct / Wrong</th>
@@ -508,6 +508,7 @@ async function requireAdmin() {
 /* ---- page data ---- */
 
 let allRows = [];
+let currentQuizId = null;
 
 function medalFor(index) {
   if (index === 0) return `<span class="medal gold">1</span>`;
@@ -523,12 +524,102 @@ function formatSeconds(sec) {
   return `${m}m ${s}s`;
 }
 
+// Ties (same score AND same total time) share a rank, matching the app's
+// SupabaseService.assignCompetitionRanks behaviour.
+function assignCompetitionRanks(rows) {
+  let rank = 0;
+  let prevScore = null;
+  let prevTime = null;
+  let position = 0;
+
+  return rows.map((row) => {
+    position += 1;
+    if (prevScore === null || row.score !== prevScore || row.total_time_seconds !== prevTime) {
+      rank = position;
+      prevScore = row.score;
+      prevTime = row.total_time_seconds;
+    }
+    return { ...row, rank_position: rank };
+  });
+}
+
+// Per-quiz leaderboard: each student's single BEST attempt for that quiz
+// (highest score, then lowest time) — mirrors _reduceBestAttemptRows.
+function reduceBestAttemptPerUser(rows) {
+  const best = new Map();
+  for (const row of rows) {
+    const uid = row.user_id;
+    if (!uid) continue;
+    const existing = best.get(uid);
+    if (!existing) {
+      best.set(uid, { ...row });
+      continue;
+    }
+    const existingScore = existing.score ?? 0;
+    const newScore = row.score ?? 0;
+    const existingTime = existing.total_time_seconds ?? Infinity;
+    const newTime = row.total_time_seconds ?? Infinity;
+    if (newScore > existingScore || (newScore === existingScore && newTime < existingTime)) {
+      best.set(uid, { ...row });
+    }
+  }
+  return [...best.values()];
+}
+
+// Overall leaderboard: SUM every attempt per student across all quizzes —
+// mirrors _reduceUserTotalRows.
+function reduceTotalsPerUser(rows) {
+  const totals = new Map();
+  for (const row of rows) {
+    const uid = row.user_id;
+    if (!uid) continue;
+    const score = row.score ?? 0;
+    const correct = row.correct_answers ?? 0;
+    const wrong = row.wrong_answers ?? 0;
+    const totalQuestions = row.total_questions ?? 0;
+    const totalTime = row.total_time_seconds ?? 0;
+
+    const existing = totals.get(uid);
+    if (!existing) {
+      totals.set(uid, {
+        user_id: uid,
+        score,
+        correct_answers: correct,
+        wrong_answers: wrong,
+        total_questions: totalQuestions,
+        total_time_seconds: totalTime,
+        attempt_count: 1,
+      });
+      continue;
+    }
+    existing.score += score;
+    existing.correct_answers += correct;
+    existing.wrong_answers += wrong;
+    existing.total_questions += totalQuestions;
+    existing.total_time_seconds += totalTime;
+    existing.attempt_count += 1;
+  }
+
+  return [...totals.values()].map((r) => ({
+    ...r,
+    percentage: r.total_questions > 0 ? (r.correct_answers / r.total_questions) * 100 : 0,
+  }));
+}
+
+function sortRows(rows) {
+  return [...rows].sort((a, b) => {
+    const byScore = (b.score ?? 0) - (a.score ?? 0);
+    if (byScore !== 0) return byScore;
+    return (a.total_time_seconds ?? 0) - (b.total_time_seconds ?? 0);
+  });
+}
+
 function renderRows(rows) {
   const tbody = document.getElementById("lb-body");
-  document.getElementById("lb-count").textContent = `${rows.length} entr${rows.length === 1 ? "y" : "ies"}`;
+  document.getElementById("lb-count").textContent = `${rows.length} student${rows.length === 1 ? "" : "s"}`;
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">No leaderboard entries match your search.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">No students match your search.</div></td></tr>`;
     return;
   }
 
@@ -536,7 +627,7 @@ function renderRows(rows) {
     <tr>
       <td><span class="rank-cell">${medalFor(i)}<span class="mono">#${row.rank_position ?? i + 1}</span></span></td>
       <td>${row.display_name ?? "—"}</td>
-      <td>${row.chapter_code ?? "—"}</td>
+      <td>${currentQuizId ? (row.chapter_code ?? "—") : `${row.attempt_count ?? 1} attempt${(row.attempt_count ?? 1) === 1 ? "" : "s"}`}</td>
       <td class="mono">${row.score}</td>
       <td class="mono">${row.percentage?.toFixed?.(1) ?? row.percentage}%</td>
       <td class="mono">${row.correct_answers} / ${row.wrong_answers}</td>
@@ -551,6 +642,10 @@ function renderRows(rows) {
 async function loadLeaderboard() {
   const params = new URLSearchParams(window.location.search);
   const quizId = params.get("quiz_id");
+  currentQuizId = quizId;
+
+  const chapterHeader = document.getElementById("lb-chapter-header");
+  if (chapterHeader) chapterHeader.textContent = quizId ? "Chapter" : "Attempts";
 
   if (quizId) {
     document.getElementById("lb-back-link").classList.remove("hidden");
@@ -565,32 +660,42 @@ async function loadLeaderboard() {
     if (quizRow?.quiz_name) {
       document.getElementById("lb-title").textContent = `Leaderboard — ${quizRow.quiz_name}`;
     }
+  } else {
+    document.getElementById("lb-back-link").classList.add("hidden");
+    document.getElementById("lb-title").textContent = "Overall Leaderboard";
+    document.getElementById("lb-subtitle").textContent = "Ranked by total score across every quiz attempt";
   }
 
+  // The real app builds the leaderboard live from apecs_quiz_attempts
+  // (not apecs_leaderboard), so we do the same here.
   let query = supabase
-    .from("apecs_leaderboard")
-    .select("*", { count: "exact" })
+    .from("apecs_quiz_attempts")
+    .select("user_id, quiz_id, chapter_code, score, correct_answers, wrong_answers, total_questions, total_time_seconds, percentage, completed_at")
     .order("score", { ascending: false })
-    .order("total_time_seconds", { ascending: true });
+    .order("total_time_seconds", { ascending: true })
+    .limit(10000);
 
   if (quizId) query = query.eq("quiz_id", quizId);
 
-  const { data, error, count } = await query;
+  const { data, error } = await query;
 
   if (error) {
     document.getElementById("lb-body").innerHTML =
       `<tr><td colspan="8"><div class="empty-state">Could not load leaderboard: ${error.message}</div></td></tr>`;
     showToast(`Leaderboard error: ${error.message}`, true);
-    console.error("apecs_leaderboard query failed:", error);
+    console.error("apecs_quiz_attempts query failed:", error);
     return;
   }
 
-  console.info(`apecs_leaderboard returned ${data ? data.length : 0} row(s)` + (quizId ? ` for quiz_id=${quizId}` : " (overall)") + (typeof count === "number" ? ` — table-wide match count: ${count}` : ""));
+  console.info(`apecs_quiz_attempts returned ${data ? data.length : 0} attempt row(s)` + (quizId ? ` for quiz_id=${quizId}` : " (overall)"));
 
-  let rows = data || [];
+  const attempts = data || [];
+  let reduced = quizId ? reduceBestAttemptPerUser(attempts) : reduceTotalsPerUser(attempts);
+  reduced = sortRows(reduced);
+  reduced = assignCompetitionRanks(reduced);
 
-  // Pull full names from apecs_profiles instead of relying on apecs_leaderboard.user_name.
-  const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
+  // Pull full names from apecs_profiles.
+  const userIds = [...new Set(reduced.map((r) => r.user_id).filter(Boolean))];
   let profileMap = new Map();
 
   if (userIds.length > 0) {
@@ -606,18 +711,16 @@ async function loadLeaderboard() {
     }
   }
 
-  rows = rows.map((r) => {
+  allRows = reduced.map((r) => {
     const p = profileMap.get(r.user_id);
     const fullName = p ? (p.full_name || `${p.first_name ?? ""} ${p.surname ?? ""}`.trim()) : null;
-    return { ...r, display_name: fullName || r.user_name || "Unknown student" };
+    return { ...r, display_name: fullName || "Unknown student" };
   });
-
-  allRows = rows;
 
   if (allRows.length === 0) {
     document.getElementById("lb-body").innerHTML =
-      `<tr><td colspan="8"><div class="empty-state">${quizId ? "No leaderboard entries for this quiz yet." : "No leaderboard entries yet. Entries appear here once students complete quiz attempts."}</div></td></tr>`;
-    document.getElementById("lb-count").textContent = "0 entries";
+      `<tr><td colspan="8"><div class="empty-state">${quizId ? "No students have attempted this quiz yet." : "No quiz attempts yet. Students will appear here once they complete a quiz."}</div></td></tr>`;
+    document.getElementById("lb-count").textContent = "0 students";
     return;
   }
 
