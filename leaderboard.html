@@ -535,7 +535,7 @@ function renderRows(rows) {
   tbody.innerHTML = rows.map((row, i) => `
     <tr>
       <td><span class="rank-cell">${medalFor(i)}<span class="mono">#${row.rank_position ?? i + 1}</span></span></td>
-      <td>${row.user_name ?? "—"}</td>
+      <td>${row.display_name ?? "—"}</td>
       <td>${row.chapter_code ?? "—"}</td>
       <td class="mono">${row.score}</td>
       <td class="mono">${row.percentage?.toFixed?.(1) ?? row.percentage}%</td>
@@ -569,22 +569,50 @@ async function loadLeaderboard() {
 
   let query = supabase
     .from("apecs_leaderboard")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("score", { ascending: false })
     .order("total_time_seconds", { ascending: true });
 
   if (quizId) query = query.eq("quiz_id", quizId);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
 
   if (error) {
     document.getElementById("lb-body").innerHTML =
       `<tr><td colspan="8"><div class="empty-state">Could not load leaderboard: ${error.message}</div></td></tr>`;
     showToast(`Leaderboard error: ${error.message}`, true);
+    console.error("apecs_leaderboard query failed:", error);
     return;
   }
 
-  allRows = data || [];
+  console.info(`apecs_leaderboard returned ${data ? data.length : 0} row(s)` + (quizId ? ` for quiz_id=${quizId}` : " (overall)") + (typeof count === "number" ? ` — table-wide match count: ${count}` : ""));
+
+  let rows = data || [];
+
+  // Pull full names from apecs_profiles instead of relying on apecs_leaderboard.user_name.
+  const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
+  let profileMap = new Map();
+
+  if (userIds.length > 0) {
+    const { data: profiles, error: profileError } = await supabase
+      .from("apecs_profiles")
+      .select("user_id, full_name, first_name, surname")
+      .in("user_id", userIds);
+
+    if (profileError) {
+      console.error("apecs_profiles lookup failed:", profileError);
+    } else {
+      profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+    }
+  }
+
+  rows = rows.map((r) => {
+    const p = profileMap.get(r.user_id);
+    const fullName = p ? (p.full_name || `${p.first_name ?? ""} ${p.surname ?? ""}`.trim()) : null;
+    return { ...r, display_name: fullName || r.user_name || "Unknown student" };
+  });
+
+  allRows = rows;
 
   if (allRows.length === 0) {
     document.getElementById("lb-body").innerHTML =
@@ -602,7 +630,7 @@ document.getElementById("search-input").addEventListener("input", (e) => {
     renderRows(allRows);
     return;
   }
-  renderRows(allRows.filter((r) => (r.user_name || "").toLowerCase().includes(q)));
+  renderRows(allRows.filter((r) => (r.display_name || "").toLowerCase().includes(q)));
 });
 
 (async function init() {
