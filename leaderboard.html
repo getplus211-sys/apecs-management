@@ -639,6 +639,58 @@ function renderRows(rows) {
   `).join("");
 }
 
+// Same normalization the app uses: negative_marking is stored as a small
+// positive or negative number (e.g. 0.25 or -0.25) — always treat it as a
+// penalty (negative) unless it's 0.
+function normalizeNegativeMarking(raw) {
+  const n = Number(raw) || 0;
+  if (n === 0) return 0;
+  return n < 0 ? n : -n;
+}
+
+function round2(value) {
+  return Math.round(value * 100) / 100;
+}
+
+// Mirrors ApecsQuizEngineScreen._attemptWithEffectiveMarks: recompute score
+// and percentage from raw counts using the QUIZ'S CURRENT negative_marking
+// value, instead of trusting the stored score (which can be stale for
+// attempts saved before negative marking was configured on that quiz).
+function applyEffectiveMarks(row, negativeMarkingByQuizId) {
+  const totalQuestions = row.total_questions || 0;
+  if (totalQuestions <= 0) return row;
+
+  const negativeMarking = normalizeNegativeMarking(negativeMarkingByQuizId.get(row.quiz_id));
+  if (negativeMarking === 0) return row;
+
+  const correct = row.correct_answers || 0;
+  const wrong = row.wrong_answers || 0;
+  const skipped = row.skipped_questions || 0;
+
+  const score = round2(correct + (wrong + skipped) * negativeMarking);
+  const percentage = round2((score / totalQuestions) * 100);
+
+  return { ...row, score, percentage };
+}
+
+async function fetchNegativeMarkingByQuizId(quizIds) {
+  const map = new Map();
+  if (quizIds.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from("apecs_quizzes")
+    .select("quiz_id, negative_marking")
+    .in("quiz_id", quizIds);
+
+  if (error) {
+    console.error("Could not load negative_marking for quizzes:", error);
+    return map;
+  }
+
+  (data || []).forEach((q) => map.set(q.quiz_id, q.negative_marking));
+  return map;
+}
+
 async function loadLeaderboard() {
   const params = new URLSearchParams(window.location.search);
   const quizId = params.get("quiz_id");
@@ -670,7 +722,7 @@ async function loadLeaderboard() {
   // (not apecs_leaderboard), so we do the same here.
   let query = supabase
     .from("apecs_quiz_attempts")
-    .select("user_id, quiz_id, chapter_code, score, correct_answers, wrong_answers, total_questions, total_time_seconds, percentage, completed_at")
+    .select("user_id, quiz_id, chapter_code, score, correct_answers, wrong_answers, skipped_questions, total_questions, total_time_seconds, percentage, completed_at")
     .order("score", { ascending: false })
     .order("total_time_seconds", { ascending: true })
     .limit(10000);
@@ -689,7 +741,16 @@ async function loadLeaderboard() {
 
   console.info(`apecs_quiz_attempts returned ${data ? data.length : 0} attempt row(s)` + (quizId ? ` for quiz_id=${quizId}` : " (overall)"));
 
-  const attempts = data || [];
+  let attempts = data || [];
+
+  // Recompute scores using each quiz's current negative marking setting —
+  // matches the app's own result-screen behaviour (_attemptWithEffectiveMarks)
+  // so historical attempts (saved before negative marking existed) show
+  // correctly here too.
+  const quizIdsInAttempts = [...new Set(attempts.map((a) => a.quiz_id).filter(Boolean))];
+  const negativeMarkingByQuizId = await fetchNegativeMarkingByQuizId(quizIdsInAttempts);
+  attempts = attempts.map((a) => applyEffectiveMarks(a, negativeMarkingByQuizId));
+
   let reduced = quizId ? reduceBestAttemptPerUser(attempts) : reduceTotalsPerUser(attempts);
   reduced = sortRows(reduced);
   reduced = assignCompetitionRanks(reduced);
